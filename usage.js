@@ -9,7 +9,7 @@
 // No cookie, no IP, no persistent identifier: a random id lives in sessionStorage (one tab = one session).
 // Lists are sent only when the box is ticked. Nothing is sent from localhost / file:// pages.
 
-export const ENDPOINT = "https://script.google.com/macros/s/REPLACE_WITH_DEPLOYMENT_ID/exec";
+export const ENDPOINT = "https://script.google.com/macros/s/AKfycbzIEgCDSycK8a0nOOkMZIqnfZzvXVxMYb2D0U4xbRVvF_zCsE82doYtcvSh2Egktq3_/exec";
 export const SHARE_DEFAULT = true;            // initial state of the "share my list" box (the visitor's choice is remembered)
 const SHARE_KEY = "tools-usage-share";
 

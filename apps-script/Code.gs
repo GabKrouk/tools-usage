@@ -15,7 +15,7 @@
  */
 
 // id of the Google Sheet (the long part of its URL); leave "" if the script was created from the Sheet (Extensions > Apps Script)
-var SHEET_ID = "";
+var SHEET_ID = "";                // set to the Sheet id when the script is standalone (as deployed: see the Apps Script project)
 var EVENTS = "events", LISTS = "lists";
 var EVENT_COLS = ["ts", "tool", "event", "version", "session", "tz", "lang", "referrer", "n_genes", "list_id"];
 var LIST_COLS = ["ts", "tool", "list_id", "n", "source", "name", "genes", "params"];
