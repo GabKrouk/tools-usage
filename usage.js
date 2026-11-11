@@ -59,6 +59,15 @@ function send(payload) {
   fetch(ENDPOINT, { method: "POST", mode: "no-cors", body, keepalive: true, headers: { "Content-Type": "text/plain" } }).catch(() => {});
 }
 
+// the same analysis re-run within a few seconds (e.g. a list sent by another tool arrives through both the link and the
+// message channel) is counted once
+const recent = new Map(), DEDUP_MS = 15000;
+function duplicate(key) {
+  const now = Date.now(), t = recent.get(key);
+  recent.set(key, now);
+  return t !== undefined && now - t < DEDUP_MS;
+}
+
 export function usage(tool, { version = "", visit = true } = {}) {
   const base = () => ({ tool, version, session: session(), lang: navigator.language || "",
     tz: (Intl.DateTimeFormat().resolvedOptions().timeZone || ""), referrer: referrer() });
@@ -67,7 +76,9 @@ export function usage(tool, { version = "", visit = true } = {}) {
     // genes: array of identifiers; source: "paste" | "example:<name>" | "from:<tool>" | …; name: optional label
     async run({ genes = [], source = "", name = "", params = {} } = {}) {
       const share = sharing() && genes.length > 0;
-      send({ ...base(), event: "run", genes: share ? genes : [], list_id: genes.length ? await listId(genes) : "",
+      const id = genes.length ? await listId(genes) : "";
+      if (duplicate([tool, id, source, JSON.stringify(params)].join("|"))) return;
+      send({ ...base(), event: "run", genes: share ? genes : [], list_id: id,
         n_genes: genes.length, share, source, name, params });
     },
     // inserts the opt-out box into `el` (a <div> near the Run button)
