@@ -14,6 +14,8 @@
  * Setup: see README.md (Extensions > Apps Script, paste this file, run setup(), Deploy > Web app, access "Anyone").
  */
 
+// id of the Google Sheet (the long part of its URL); leave "" if the script was created from the Sheet (Extensions > Apps Script)
+var SHEET_ID = "";
 var EVENTS = "events", LISTS = "lists";
 var EVENT_COLS = ["ts", "tool", "event", "version", "session", "tz", "lang", "referrer", "n_genes", "list_id"];
 var LIST_COLS = ["ts", "tool", "list_id", "n", "source", "name", "genes", "params"];
@@ -21,9 +23,11 @@ var MAX_GENES = 20000;                       // larger lists are counted but not
 var TOOL_RE = /^[a-z0-9][a-z0-9_-]{0,31}$/;
 var GENE_RE = /^[A-Za-z0-9._:-]{2,40}$/;     // AGI (AT1G01010) and other species' identifiers
 
+function book() { return SHEET_ID ? SpreadsheetApp.openById(SHEET_ID) : SpreadsheetApp.getActive(); }
+
 // ------------------------------------------------------------------------------------------ setup (run once)
 function setup() {
-  var ss = SpreadsheetApp.getActive();
+  var ss = book();
   [[EVENTS, EVENT_COLS], [LISTS, LIST_COLS]].forEach(function (s) {
     var sh = ss.getSheetByName(s[0]) || ss.insertSheet(s[0]);
     if (sh.getLastRow() === 0) { sh.appendRow(s[1]); sh.setFrozenRows(1); }
@@ -41,7 +45,7 @@ function doPost(e) {
   var lock = LockService.getScriptLock();
   lock.waitLock(10000);
   try {
-    var ss = SpreadsheetApp.getActive();
+    var ss = book();
     ss.getSheetByName(EVENTS).appendRow(rows.event);
     if (rows.list) ss.getSheetByName(LISTS).appendRow(rows.list);
   } finally { lock.releaseLock(); }
@@ -76,7 +80,7 @@ function cleanEvent(d, now) {
 function doGet(e) {
   var q = (e && e.parameter) || {};
   var admin = !!q.key && q.key === PropertiesService.getScriptProperties().getProperty("ADMIN_KEY");
-  var ss = SpreadsheetApp.getActive();
+  var ss = book();
   var ev = values(ss.getSheetByName(EVENTS)), li = admin ? values(ss.getSheetByName(LISTS)) : [];
   if (q.action === "export") {
     if (!admin) return json({ ok: false, error: "key required" });
