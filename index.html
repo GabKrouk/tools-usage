@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Usage des outils — gabkrouk.github.io</title>
+<meta name="robots" content="noindex">
+<style>
+:root {
+  color-scheme: light;
+  --surface-0: #f4f3f0; --surface-1: #fcfcfb; --border: #e3e2de; --grid: #ecebe7;
+  --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #7a7974;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300; --s7: #6250d6; --s8: #e34948;
+  --good: #0a7d0a; --bad: #c12f2f; --accent: #2a78d6; --prev: #a9a8a2;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --surface-0: #121211; --surface-1: #1a1a19; --border: #2f2f2c; --grid: #262624;
+    --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8e8d86;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+    --good: #3fbf3f; --bad: #e66767; --accent: #3987e5; --prev: #5d5c57;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-0: #121211; --surface-1: #1a1a19; --border: #2f2f2c; --grid: #262624;
+  --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8e8d86;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+  --good: #3fbf3f; --bad: #e66767; --accent: #3987e5; --prev: #5d5c57;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--surface-0); color: var(--text-primary);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 1180px; margin: 0 auto; padding: 20px 20px 60px; }
+header { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+h1 { font-size: 22px; margin: 0; font-weight: 650; }
+h2 { font-size: 15px; margin: 0 0 12px; font-weight: 600; }
+.sub { color: var(--text-secondary); font-size: 13px; }
+.muted { color: var(--text-muted); }
+.spacer { flex: 1; }
+button, input, select { font: inherit; color: inherit; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface-1); }
+.seg button { border: 0; background: none; padding: 5px 11px; cursor: pointer; color: var(--text-secondary); }
+.seg button + button { border-left: 1px solid var(--border); }
+.seg button.on { background: var(--text-primary); color: var(--surface-1); }
+.iconbtn { border: 1px solid var(--border); background: var(--surface-1); border-radius: 8px; padding: 5px 10px; cursor: pointer; }
+.filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 18px 0 14px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { border: 1px solid var(--border); background: var(--surface-1); border-radius: 999px; padding: 4px 12px 4px 9px;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 6px; color: var(--text-secondary); }
+.chip.on { border-color: var(--text-primary); color: var(--text-primary); font-weight: 600; }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0; padding: 0; overflow: hidden; }
+.kpi { padding: 14px 18px; cursor: pointer; border-bottom: 3px solid transparent; }
+.kpi + .kpi { border-left: 1px solid var(--border); }
+.kpi.on { border-bottom-color: var(--text-primary); background: color-mix(in srgb, var(--surface-0) 55%, var(--surface-1)); }
+.kpi.static { cursor: default; }
+.kpi .lab { color: var(--text-secondary); font-size: 12.5px; }
+.kpi .val { font-size: 28px; font-weight: 650; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+.kpi .delta { font-size: 12.5px; color: var(--text-secondary); }
+.delta .up { color: var(--good); } .delta .down { color: var(--bad); }
+.chartwrap { position: relative; padding: 8px 6px 4px; }
+#main { width: 100%; height: 300px; display: block; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; padding: 6px 12px 0; color: var(--text-secondary); font-size: 12.5px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.swatch-line { width: 16px; height: 0; border-top: 2px solid; display: inline-block; }
+.swatch-dash { width: 16px; height: 0; border-top: 2px dashed var(--prev); display: inline-block; }
+.tip { position: absolute; pointer-events: none; background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 10px; font-size: 12.5px; box-shadow: 0 4px 16px rgba(0,0,0,.12); min-width: 150px;
+  display: none; z-index: 5; }
+.tip .row { display: flex; align-items: center; gap: 6px; justify-content: space-between; }
+.tip .row b { font-variant-numeric: tabular-nums; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+@media (max-width: 820px) { .grid2 { grid-template-columns: 1fr; } .kpi + .kpi { border-left: 0; } }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--grid); vertical-align: middle; }
+th { color: var(--text-secondary); font-weight: 500; font-size: 12.5px; }
+td.n, th.n { text-align: right; }
+.hbar { display: grid; grid-template-columns: minmax(90px, 38%) 1fr auto; gap: 8px; align-items: center; margin: 5px 0; font-size: 13px; }
+.hbar .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); }
+.hbar .bar { height: 12px; border-radius: 0 4px 4px 0; background: var(--s1); min-width: 2px; }
+.hbar .v { font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.banner { border-radius: 10px; padding: 10px 14px; margin-top: 14px; font-size: 13px;
+  background: color-mix(in srgb, var(--s4) 16%, var(--surface-1)); border: 1px solid color-mix(in srgb, var(--s4) 45%, var(--border)); }
+.section { margin-top: 26px; }
+.section > h2 { font-size: 17px; margin-bottom: 4px; }
+.genes code { font-size: 12.5px; }
+a { color: var(--accent); }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+.keyrow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.keyrow input { border: 1px solid var(--border); background: var(--surface-1); border-radius: 8px; padding: 5px 9px; width: 220px; }
+.toggle-table { font-size: 12.5px; color: var(--text-secondary); background: none; border: 0; cursor: pointer; text-decoration: underline; padding: 0 12px; }
+#datatable { display: none; max-height: 260px; overflow: auto; margin: 8px 12px 0; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Usage des outils</h1>
+    <span class="sub" id="subtitle">gabkrouk.github.io</span>
+    <span class="spacer"></span>
+    <button class="iconbtn" id="refresh" title="Recharger">↻ Actualiser</button>
+    <button class="iconbtn" id="theme" title="Thème clair / sombre">Clair / sombre</button>
+  </header>
+  <div id="banner"></div>
+
+  <div class="filters">
+    <div class="seg" id="range">
+      <button data-r="7">7 j</button><button data-r="28" class="on">28 j</button><button data-r="90">90 j</button><button data-r="365">365 j</button><button data-r="0">Tout</button>
+    </div>
+    <div class="chips" id="tools"></div>
+  </div>
+
+  <div class="card kpis" id="kpis"></div>
+
+  <div class="card" style="margin-top:14px;padding:6px 6px 12px">
+    <div class="chartwrap">
+      <svg id="main" role="img" aria-label="Courbe d'utilisation"></svg>
+      <div class="tip" id="tip"></div>
+    </div>
+    <div class="legend" id="legend"></div>
+    <button class="toggle-table" id="showtable">Voir les données en tableau</button>
+    <div id="datatable"></div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h2>Par outil <span class="muted" style="font-weight:400">— sur la période</span></h2>
+    <table id="tooltable"></table>
+  </div>
+
+  <div class="grid2">
+    <div class="card"><h2>Origine approximative <span class="muted" style="font-weight:400">(fuseau horaire du navigateur)</span></h2><div id="tz"></div></div>
+    <div class="card"><h2>Provenance <span class="muted" style="font-weight:400">(site précédent)</span></h2><div id="ref"></div></div>
+  </div>
+
+  <section class="section genes">
+    <h2>Listes de gènes interrogées</h2>
+    <p class="sub" style="margin:0 0 12px">Réservé au propriétaire : listes partagées par les utilisateurs, toutes périodes. Une liste relancée plusieurs fois compte une fois ; les exemples des outils sont exclus.</p>
+    <div class="keyrow card" id="keycard">
+      <span>Clé admin</span><input id="key" type="password" placeholder="ADMIN_KEY (voir README)" autocomplete="off">
+      <button class="iconbtn" id="savekey">Valider</button>
+      <span class="muted" id="keymsg"></span>
+    </div>
+    <div id="genesbody"></div>
+  </section>
+</main>
+
+<script type="module">
+let ENDPOINT = "";
+try { ({ ENDPOINT } = await import("./usage.js")); } catch {}
+const configured = ENDPOINT && !ENDPOINT.includes("REPLACE_WITH");
+const params = new URLSearchParams(location.search);
+const DEMO = params.has("demo") || !configured;
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmt = n => n >= 1e4 ? (n / 1e3).toFixed(n >= 1e5 ? 0 : 1).replace(".", ",") + " k" : n.toLocaleString("fr-FR");
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const SLOTS = ["--s1", "--s2", "--s3", "--s4", "--s5", "--s6", "--s7", "--s8"];
+const NICE = { regine: "Régine", genecloud: "GeneCloud" };
+const nice = t => NICE[t] || t.charAt(0).toUpperCase() + t.slice(1);
+const METRICS = { visits: "Vues", runs: "Analyses lancées", sessions: "Sessions" };
+
+let DATA = null;
+const S = { range: 28, tool: "all", metric: "visits", table: false };
+try { const k = localStorage.getItem("tools-usage-key"); if (k) $("#key").value = k; } catch {}
+
+// ---------------------------------------------------------------------------------------- theme
+const root = document.documentElement;
+try { const t = localStorage.getItem("tools-usage-theme"); if (t) root.dataset.theme = t; } catch {}
+$("#theme").onclick = () => {
+  const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  root.dataset.theme = dark ? "light" : "dark";
+  try { localStorage.setItem("tools-usage-theme", root.dataset.theme); } catch {}
+  render();
+};
+
+// ---------------------------------------------------------------------------------------- dates
+const day = d => d.toISOString().slice(0, 10);
+const addDays = (s, n) => { const d = new Date(s + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return day(d); };
+const monday = s => { const d = new Date(s + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return day(d); };
+const label = (s, weekly) => new Date(s + "T00:00:00Z").toLocaleDateString("fr-FR", { day: "numeric", month: "short", ...(weekly ? {} : { weekday: "short" }), timeZone: "UTC" });
+
+// ---------------------------------------------------------------------------------------- load
+async function load() {
+  $("#banner").innerHTML = "";
+  if (DEMO) {
+    DATA = demoData();
+    $("#banner").innerHTML = `<div class="banner"><b>Données de démonstration.</b> ${configured ? "Retirez <code>?demo</code> de l'adresse pour voir les vraies données."
+      : "Le backend n'est pas encore branché : collez l'URL du déploiement Apps Script dans <code>usage.js</code> (voir README)."} Les chiffres ci-dessous sont simulés.</div>`;
+  } else {
+    const key = $("#key").value.trim();
+    try {
+      const r = await fetch(ENDPOINT + "?action=stats" + (key ? "&key=" + encodeURIComponent(key) : ""));
+      DATA = await r.json();
+      if (!DATA.ok) throw new Error(DATA.error || "erreur");
+    } catch (e) {
+      $("#banner").innerHTML = `<div class="banner">Impossible de lire les statistiques : ${esc(e.message)}</div>`;
+      DATA = { tools: [], daily: [], tz: [], referrers: [] };
+    }
+  }
+  $("#keymsg").textContent = DATA.admin ? "✓ accès aux listes" : ($("#key").value ? "clé refusée" : "");
+  $("#subtitle").textContent = "gabkrouk.github.io · " + (DATA.tools.length) + " outil" + (DATA.tools.length > 1 ? "s" : "") +
+    (DATA.generated ? " · mis à jour " + new Date(DATA.generated).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" }) : "");
+  render();
+}
+$("#refresh").onclick = load;
+$("#savekey").onclick = () => { try { localStorage.setItem("tools-usage-key", $("#key").value.trim()); } catch {} load(); };
+$("#key").addEventListener("keydown", e => { if (e.key === "Enter") $("#savekey").click(); });
+
+// ---------------------------------------------------------------------------------------- model
+// colour follows the tool: slot = order of first appearance (a new tool takes the next free slot, nobody is repainted)
+const colorOf = t => { const i = DATA.tools.findIndex(x => x.tool === t); return i < 0 || i >= 8 ? css("--text-muted") : css(SLOTS[i]); };
+const shownTools = () => S.tool === "all" ? DATA.tools.map(t => t.tool) : [S.tool];
+
+function windowDays() {
+  const today = day(new Date());
+  const first = DATA.tools.length ? DATA.tools.map(t => t.first).sort()[0] : today;
+  const n = S.range || Math.max(7, Math.round((Date.parse(today) - Date.parse(first)) / 864e5) + 1);
+  const end = today, start = addDays(end, -(n - 1));
+  return { start, end, n, prevStart: addDays(start, -n), prevEnd: addDays(start, -1) };
+}
+
+// totals per tool on [a, b]
+function totals(a, b, tools) {
+  const o = { visits: 0, runs: 0, sessions: 0 };
+  for (const r of DATA.daily) if (r.d >= a && r.d <= b && tools.includes(r.tool)) { o.visits += r.visits; o.runs += r.runs; o.sessions += r.sessions; }
+  return o;
+}
+
+// one series per tool, daily or weekly buckets
+function series(start, end, metric, tools) {
+  const weekly = (Date.parse(end) - Date.parse(start)) / 864e5 > 120;
+  const keyOf = d => weekly ? monday(d) : d;
+  const buckets = [];
+  for (let d = start; d <= end; d = addDays(d, 1)) { const k = keyOf(d); if (buckets[buckets.length - 1] !== k) buckets.push(k); }
+  const idx = new Map(buckets.map((b, i) => [b, i]));
+  const by = Object.fromEntries(tools.map(t => [t, buckets.map(() => 0)]));
+  for (const r of DATA.daily) if (r.d >= start && r.d <= end && by[r.tool]) by[r.tool][idx.get(keyOf(r.d))] += r[metric];
+  return { buckets, weekly, by };
+}
+
+// ---------------------------------------------------------------------------------------- render
+function render() {
+  if (!DATA) return;
+  renderChips(); renderKpis(); renderChart(); renderToolTable(); renderBars(); renderGenes();
+}
+
+function renderChips() {
+  const all = `<button class="chip ${S.tool === "all" ? "on" : ""}" data-t="all">Tous les outils</button>`;
+  $("#tools").innerHTML = all + DATA.tools.map(t =>
+    `<button class="chip ${S.tool === t.tool ? "on" : ""}" data-t="${esc(t.tool)}"><span class="dot" style="background:${colorOf(t.tool)}"></span>${esc(nice(t.tool))}</button>`).join("");
+  $("#tools").querySelectorAll(".chip").forEach(b => b.onclick = () => { S.tool = b.dataset.t; render(); });
+}
+document.querySelectorAll("#range button").forEach(b => b.onclick = () => {
+  S.range = +b.dataset.r; document.querySelectorAll("#range button").forEach(x => x.classList.toggle("on", x === b)); render();
+});
+
+function deltaHtml(cur, prev) {
+  if (!prev) return cur ? `<span class="muted">nouveau sur la période</span>` : `<span class="muted">—</span>`;
+  const p = Math.round(100 * (cur - prev) / prev);
+  const cls = p > 0 ? "up" : p < 0 ? "down" : "";
+  return `<span class="${cls}">${p > 0 ? "▲" : p < 0 ? "▼" : "="} ${Math.abs(p)} %</span> vs période précédente`;
+}
+
+function renderKpis() {
+  const w = windowDays(), tools = shownTools();
+  const cur = totals(w.start, w.end, tools), prev = totals(w.prevStart, w.prevEnd, tools);
+  let h = Object.entries(METRICS).map(([m, lab]) =>
+    `<div class="kpi ${S.metric === m ? "on" : ""}" data-m="${m}" role="button" tabindex="0"><div class="lab">${lab}</div>
+      <div class="val">${fmt(cur[m])}</div><div class="delta">${S.range ? deltaHtml(cur[m], prev[m]) : `<span class="muted">depuis le début</span>`}</div></div>`).join("");
+  const conv = cur.visits ? Math.round(100 * cur.runs / cur.visits) : 0, pconv = prev.visits ? Math.round(100 * prev.runs / prev.visits) : 0;
+  h += `<div class="kpi static"><div class="lab">Analyses par vue</div><div class="val">${conv} %</div>
+    <div class="delta">${S.range && prev.visits ? `${conv - pconv >= 0 ? "+" : "−"}${Math.abs(conv - pconv)} pts vs période précédente` : `<span class="muted">part des vues suivies d'une analyse</span>`}</div></div>`;
+  $("#kpis").innerHTML = h;
+  $("#kpis").querySelectorAll(".kpi[data-m]").forEach(k => {
+    k.onclick = () => { S.metric = k.dataset.m; render(); };
+    k.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); k.click(); } };
+  });
+}
+
+function niceStep(m) { for (const n of [4, 5, 3, 6, 2, 8, 10, 1]) if (Number.isInteger(m / n)) return m / n; return m; }
+function niceMax(v) { const raw = Math.max(1, v / 4), p = 10 ** Math.floor(Math.log10(raw)), r = raw / p;
+  const step = Math.max(1, (r <= 1 ? 1 : r <= 2 ? 2 : r <= 5 ? 5 : 10) * p); return step * Math.max(1, Math.ceil(v / step)); }
+
+function renderChart() {
+  const svg = $("#main"), W = svg.clientWidth || 900, H = 300, m = { l: 44, r: 16, t: 14, b: 28 };
+  const w = windowDays(), tools = shownTools();
+  const cur = series(w.start, w.end, S.metric, tools);
+  const single = tools.length === 1 && S.range > 0;
+  const prev = single ? series(w.prevStart, w.prevEnd, S.metric, tools) : null;
+  const lines = tools.map(t => ({ t, v: cur.by[t], color: colorOf(t) }));
+  const prevV = prev ? prev.by[tools[0]].slice(-cur.buckets.length) : null;
+  const all = lines.flatMap(l => l.v).concat(prevV || []);
+  const ymax = niceMax(Math.max(1, ...all));
+  const n = cur.buckets.length, x = i => m.l + (n <= 1 ? 0 : i * (W - m.l - m.r) / (n - 1)), y = v => m.t + (H - m.t - m.b) * (1 - v / ymax);
+  const grid = css("--grid"), muted = css("--text-muted");
+  let s = "";
+  const nt = ymax / niceStep(ymax);
+  for (let k = 0; k <= nt; k++) {
+    const v = ymax * k / nt, yy = y(v);
+    s += `<line x1="${m.l}" x2="${W - m.r}" y1="${yy}" y2="${yy}" stroke="${grid}" stroke-width="1"/>`;
+    s += `<text x="${m.l - 8}" y="${yy + 4}" text-anchor="end" font-size="11" fill="${muted}">${fmt(v)}</text>`;
+  }
+  const ticks = Math.min(n, Math.max(2, Math.floor((W - m.l - m.r) / 90)));
+  for (let k = 0; k < ticks; k++) {
+    const i = Math.round(k * (n - 1) / Math.max(1, ticks - 1));
+    s += `<text x="${x(i)}" y="${H - 8}" text-anchor="${k === 0 ? "start" : k === ticks - 1 ? "end" : "middle"}" font-size="11" fill="${muted}">${label(cur.buckets[i], cur.weekly)}</text>`;
+  }
+  const path = v => v.map((val, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(val).toFixed(1)}`).join("");
+  if (prevV) s += `<path d="${path(prevV)}" fill="none" stroke="${css("--prev")}" stroke-width="2" stroke-dasharray="5 4"/>`;
+  if (single) {
+    const v = lines[0].v;
+    s += `<path d="${path(v)}L${x(n - 1)},${y(0)}L${x(0)},${y(0)}Z" fill="${lines[0].color}" fill-opacity=".12"/>`;
+  }
+  for (const l of lines) s += `<path d="${path(l.v)}" fill="none" stroke="${l.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  s += `<line id="xh" x1="0" x2="0" y1="${m.t}" y2="${H - m.b}" stroke="${muted}" stroke-width="1" visibility="hidden"/>`;
+  s += `<g id="xdots"></g><rect id="hit" x="${m.l}" y="0" width="${W - m.l - m.r}" height="${H}" fill="transparent"/>`;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.innerHTML = s;
+
+  // legend
+  let lg = lines.length > 1 ? lines.map(l => `<span><span class="swatch-line" style="border-color:${l.color}"></span>${esc(nice(l.t))}</span>`).join("") : "";
+  if (prevV) lg += `<span><span class="swatch-line" style="border-color:${lines[0].color}"></span>${METRICS[S.metric]} — ${esc(nice(tools[0]))}</span><span><span class="swatch-dash"></span>période précédente</span>`;
+  if (!lines.length) lg = `<span>Aucune donnée pour l'instant.</span>`;
+  $("#legend").innerHTML = lg;
+
+  // hover: crosshair + tooltip
+  const tip = $("#tip"), hit = svg.querySelector("#hit"), xh = svg.querySelector("#xh"), dots = svg.querySelector("#xdots");
+  const surf = css("--surface-1");
+  hit.onmousemove = e => {
+    const r = svg.getBoundingClientRect(), px = (e.clientX - r.left) * W / r.width;
+    const i = Math.max(0, Math.min(n - 1, Math.round((px - m.l) / ((W - m.l - m.r) / Math.max(1, n - 1)))));
+    xh.setAttribute("x1", x(i)); xh.setAttribute("x2", x(i)); xh.setAttribute("visibility", "visible");
+    dots.innerHTML = lines.map(l => `<circle cx="${x(i)}" cy="${y(l.v[i])}" r="4.5" fill="${l.color}" stroke="${surf}" stroke-width="2"/>`).join("");
+    const end = cur.weekly ? addDays(cur.buckets[i], 6) : null;
+    let h = `<div class="muted" style="margin-bottom:4px">${cur.weekly ? "Semaine du " + label(cur.buckets[i], true) : label(cur.buckets[i])}</div>`;
+    const rows = lines.map(l => ({ l, v: l.v[i] })).sort((a, b) => b.v - a.v);
+    h += rows.map(o => `<div class="row"><span><span class="dot" style="background:${o.l.color}"></span> ${esc(nice(o.l.t))}</span><b>${fmt(o.v)}</b></div>`).join("");
+    if (lines.length > 1) h += `<div class="row" style="border-top:1px solid var(--grid);margin-top:4px;padding-top:4px"><span>Total</span><b>${fmt(rows.reduce((a, o) => a + o.v, 0))}</b></div>`;
+    if (prevV) h += `<div class="row muted"><span>période préc.</span><b>${fmt(prevV[i] ?? 0)}</b></div>`;
+    tip.innerHTML = h; tip.style.display = "block";
+    const cx = x(i) * r.width / W, left = cx + 14 + tip.offsetWidth > r.width ? cx - tip.offsetWidth - 14 : cx + 14;
+    tip.style.left = left + 6 + "px"; tip.style.top = "16px";
+  };
+  hit.onmouseleave = () => { tip.style.display = "none"; xh.setAttribute("visibility", "hidden"); dots.innerHTML = ""; };
+
+  // table view
+  $("#datatable").innerHTML = `<table><tr><th>${cur.weekly ? "Semaine" : "Jour"}</th>${lines.map(l => `<th class="n">${esc(nice(l.t))}</th>`).join("")}</tr>` +
+    cur.buckets.map((b, i) => `<tr><td>${b}</td>${lines.map(l => `<td class="n">${l.v[i]}</td>`).join("")}</tr>`).reverse().join("") + "</table>";
+}
+$("#showtable").onclick = () => { S.table = !S.table; $("#datatable").style.display = S.table ? "block" : "none"; $("#showtable").textContent = S.table ? "Masquer le tableau" : "Voir les données en tableau"; };
+addEventListener("resize", () => { clearTimeout(window.__rz); window.__rz = setTimeout(renderChart, 120); });
+
+function spark(t) {
+  const end = day(new Date()), start = addDays(end, -27), v = series(start, end, S.metric, [t]).by[t];
+  const mx = Math.max(1, ...v), W = 110, H = 24;
+  const d = v.map((val, i) => `${i ? "L" : "M"}${(i * W / (v.length - 1)).toFixed(1)},${(H - 2 - (H - 4) * val / mx).toFixed(1)}`).join("");
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true"><path d="${d}" fill="none" stroke="${colorOf(t)}" stroke-width="1.5"/></svg>`;
+}
+
+function renderToolTable() {
+  const w = windowDays(), all = DATA.tools.map(t => t.tool), tot = totals(w.start, w.end, all);
+  const rows = DATA.tools.map(t => ({ t, c: totals(w.start, w.end, [t.tool]) })).sort((a, b) => b.c[S.metric] - a.c[S.metric]);
+  $("#tooltable").innerHTML = `<tr><th>Outil</th><th class="n">Vues</th><th class="n">Analyses</th><th class="n">Sessions</th><th class="n">Part (${METRICS[S.metric].toLowerCase()})</th><th>28 derniers jours</th><th>En ligne depuis</th></tr>` +
+    rows.map(({ t, c }) => `<tr><td><span class="dot" style="background:${colorOf(t.tool)}"></span> ${esc(nice(t.tool))}</td>
+      <td class="n">${fmt(c.visits)}</td><td class="n">${fmt(c.runs)}</td><td class="n">${fmt(c.sessions)}</td>
+      <td class="n">${tot[S.metric] ? Math.round(100 * c[S.metric] / tot[S.metric]) : 0} %</td><td>${spark(t.tool)}</td>
+      <td class="muted">${new Date(t.first + "T00:00:00Z").toLocaleDateString("fr-FR", { dateStyle: "medium", timeZone: "UTC" })}</td></tr>`).join("") +
+    (rows.length ? "" : `<tr><td colspan="7" class="muted">Aucun outil n'a encore envoyé de données.</td></tr>`);
+}
+
+function hbars(list, el, color) {
+  const top = list.slice(0, 10), mx = Math.max(1, ...top.map(o => o.n)), total = list.reduce((a, o) => a + o.n, 0);
+  el.innerHTML = top.map(o => `<div class="hbar" title="${esc(o.key)} : ${o.n} vue(s), ${Math.round(100 * o.n / total)} %"><span class="name">${esc(o.key)}</span>
+    <span><span class="bar" style="display:block;width:${(100 * o.n / mx).toFixed(1)}%;background:${color}"></span></span><span class="v">${fmt(o.n)}</span></div>`).join("")
+    || `<p class="muted">Pas encore de données.</p>`;
+}
+function renderBars() {
+  const tools = shownTools(), sum = arr => { const o = {}; for (const r of arr) if (tools.includes(r.tool)) o[r.key] = (o[r.key] || 0) + r.n; return Object.entries(o).map(([key, n]) => ({ key, n })).sort((a, b) => b.n - a.n); };
+  const color = tools.length === 1 ? colorOf(tools[0]) : css("--s1");
+  hbars(sum(DATA.tz).map(o => ({ ...o, key: o.key.replace(/_/g, " ") })), $("#tz"), color);
+  hbars(sum(DATA.referrers).map(o => ({ ...o, key: o.key === "direct" ? "accès direct / favori" : o.key })), $("#ref"), color);
+}
+
+function renderGenes() {
+  const G = DATA.genes, el = $("#genesbody");
+  $("#keycard").style.display = DEMO ? "none" : "";
+  if (!G) { el.innerHTML = DEMO ? "" : `<p class="muted">Entrez la clé admin pour voir les listes.</p>`; return; }
+  const exp = DEMO ? "#" : `${ENDPOINT}?action=export&format=tsv&key=${encodeURIComponent($("#key").value.trim())}`;
+  const mx = Math.max(1, ...G.sizes.map(s => s.n));
+  const tair = g => /^AT[1-5CM]G\d{5}$/i.test(g) ? `<a class="mono" href="https://www.arabidopsis.org/locus?name=${g}" target="_blank" rel="noopener">${g}</a>` : `<span class="mono">${esc(g)}</span>`;
+  const toolDots = ts => ts.map(t => `<span class="dot" title="${esc(nice(t))}" style="background:${colorOf(t)}"></span>`).join(" ");
+  el.innerHTML = `
+  <div class="card kpis" style="margin-top:12px">
+    <div class="kpi static"><div class="lab">Listes reçues</div><div class="val">${fmt(G.submitted)}</div><div class="delta">dont ${fmt(G.examples)} exemples</div></div>
+    <div class="kpi static"><div class="lab">Listes distinctes</div><div class="val">${fmt(G.distinct)}</div><div class="delta">hors exemples</div></div>
+    <div class="kpi static"><div class="lab">Gènes différents interrogés</div><div class="val">${fmt(G.nGenes ?? G.top.length)}</div><div class="delta">dans les listes distinctes</div></div>
+    <div class="kpi static"><div class="lab">Export</div><div class="val" style="font-size:16px;padding-top:10px"><a href="${exp}">Télécharger toutes les listes (TSV)</a></div><div class="delta">pour les analyses ultérieures</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h2>Taille des listes</h2>${G.sizes.map(s => `<div class="hbar"><span class="name">${s.bin} gènes</span><span><span class="bar" style="display:block;width:${(100 * s.n / mx).toFixed(1)}%"></span></span><span class="v">${fmt(s.n)}</span></div>`).join("")}</div>
+    <div class="card"><h2>Gènes les plus interrogés</h2><div style="max-height:300px;overflow:auto"><table><tr><th>Gène</th><th class="n">Listes</th><th>Outils</th></tr>
+      ${G.top.slice(0, 50).map(g => `<tr><td>${tair(g.gene)}</td><td class="n">${g.lists}</td><td>${toolDots(g.tools)}</td></tr>`).join("") || `<tr><td colspan="3" class="muted">—</td></tr>`}</table></div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h2>Gènes interrogés ensemble <span class="muted" style="font-weight:400">(paires)</span></h2><div style="max-height:320px;overflow:auto"><table><tr><th>Gène A</th><th>Gène B</th><th class="n">Listes communes</th><th class="n">Jaccard</th></tr>
+      ${G.pairs.slice(0, 60).map(p => `<tr><td>${tair(p.a)}</td><td>${tair(p.b)}</td><td class="n">${p.lists}</td><td class="n">${p.jaccard.toFixed(2).replace(".", ",")}</td></tr>`).join("") || `<tr><td colspan="4" class="muted">Il faut au moins deux listes qui partagent des gènes.</td></tr>`}</table></div></div>
+    <div class="card"><h2>Dernières listes</h2><div style="max-height:320px;overflow:auto"><table><tr><th>Date</th><th>Outils</th><th class="n">Gènes</th><th class="n">Lancée</th><th>Origine</th></tr>
+      ${G.recent.map(r => `<tr title="${esc(r.genes.join(", ") + (r.more ? ` … +${r.more}` : ""))}"><td>${new Date(r.last).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}</td><td>${toolDots(r.tools)}</td><td class="n">${r.n}</td><td class="n">${r.runs}×</td><td class="muted">${esc(r.name || r.source || "—")}</td></tr>`).join("") || `<tr><td colspan="5" class="muted">—</td></tr>`}</table></div></div>
+  </div>`;
+}
+
+// ---------------------------------------------------------------------------------------- demo data (clearly labelled)
+function demoData() {
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const pois = l => { let k = 0, p = 1, L = Math.exp(-Math.min(l, 60)); do { k++; p *= rnd(); } while (p > L); return k - 1 + (l > 60 ? Math.round(l - 60) : 0); };
+  const today = day(new Date()), tools = [["regine", addDays(today, -260), 9, 0.45], ["genecloud", addDays(today, -180), 6, 0.55], ["nouvel-outil", addDays(today, -21), 4, 0.35]];
+  const daily = [], tz = [], referrers = [];
+  const zones = [["Europe/Paris", 40], ["America/New_York", 12], ["Asia/Shanghai", 10], ["Europe/Berlin", 8], ["America/Los_Angeles", 6], ["Asia/Tokyo", 5], ["Europe/Madrid", 5], ["America/Sao_Paulo", 4], ["Asia/Kolkata", 4], ["Australia/Sydney", 3]];
+  const refs = [["direct", 45], ["www.google.com", 22], ["gabkrouk.github.io/genecloud", 10], ["gabkrouk.github.io/regine", 8], ["academic.oup.com", 7], ["github.com", 5], ["x.com", 3]];
+  for (const [tool, first, base, conv] of tools) {
+    let tv = 0;
+    for (let d = first; d <= today; d = addDays(d, 1)) {
+      const age = (Date.parse(d) - Date.parse(first)) / 864e5, wd = new Date(d + "T00:00:00Z").getUTCDay();
+      let lam = base * (0.6 + Math.min(1.2, age / 200)) * (wd === 0 || wd === 6 ? 0.35 : 1);
+      if (tool === "regine" && Math.abs(Date.parse(d) - Date.parse(addDays(today, -40))) < 4 * 864e5) lam *= 4;   // a paper / a tweet
+      const visits = pois(lam), runs = Math.round(visits * conv * (0.7 + 0.6 * rnd())), sessions = Math.max(0, Math.round(visits * 0.85));
+      daily.push({ d, tool, visits, runs, sessions }); tv += visits;
+    }
+    const zt = zones.reduce((a, z) => a + z[1], 0), rt = refs.reduce((a, z) => a + z[1], 0);
+    zones.forEach(([k, w]) => tz.push({ tool, key: k, n: Math.round(tv * w / zt * (0.7 + 0.6 * rnd())) }));
+    refs.filter(r => !r[0].endsWith(tool)).forEach(([k, w]) => referrers.push({ tool, key: k, n: Math.round(tv * w / rt * (0.7 + 0.6 * rnd())) }));
+  }
+  const nit = ["AT1G12110", "AT1G08090", "AT1G77760", "AT1G37130", "AT2G15620", "AT4G24020", "AT1G13300", "AT3G25730", "AT5G67420", "AT4G37540", "AT1G68670", "AT2G22200"];
+  return {
+    generated: new Date().toISOString(), admin: true,
+    tools: tools.map(([tool, first]) => ({ tool, first, last: today })), daily, tz, referrers,
+    genes: {
+      submitted: 412, distinct: 287, nGenes: 6931, examples: 96, perTool: { regine: 251, genecloud: 148, "nouvel-outil": 13 },
+      sizes: [{ bin: "1-5", n: 31 }, { bin: "6-20", n: 74 }, { bin: "21-50", n: 69 }, { bin: "51-200", n: 72 }, { bin: "201-1000", n: 34 }, { bin: ">1000", n: 7 }],
+      top: nit.map((g, i) => ({ gene: g, lists: 41 - i * 3, tools: i % 3 ? ["regine", "genecloud"] : ["regine"] })),
+      pairs: [[0, 1, 22, .48], [0, 5, 19, .44], [2, 3, 18, .61], [1, 5, 15, .37], [4, 2, 14, .39], [6, 8, 11, .33], [3, 4, 10, .31]].map(([a, b, n, j]) => ({ a: nit[a], b: nit[b], lists: n, jaccard: j })),
+      recent: Array.from({ length: 8 }, (_, i) => ({ last: addDays(today, -i) + "T10:00:00Z", n: [13, 240, 57, 8, 1200, 33, 96, 18][i], runs: 1 + (i % 3), tools: i % 2 ? ["genecloud"] : ["regine", "genecloud"], name: ["", "cluster 4", "", "from:genecloud · response to nitrate", "", "", "DEG root 2h", ""][i], source: "paste", genes: nit.slice(0, 5), more: 0 })),
+    },
+  };
+}
+
+load();
+</script>
+</body>
+</html>
