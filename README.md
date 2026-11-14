@@ -61,6 +61,17 @@ Accounts: a tool with user accounts (Fiole) reports each sign-in **from its serv
 only visible with the admin key (dashboard section *Comptes utilisateurs*, or `ENDPOINT?action=accounts&format=tsv&key=ADMIN_KEY`);
 the public statistics never include them. The `accounts` sheet is created on the first sign-in.
 
+Régine and GeneCloud sign their users in with their **Fiole account** (one account for Fiole, Régine and GeneCloud),
+through [`account.js`](account.js); the Fiole server then reports each sign-in here the same way, with the tool's name
+(`regine`, `genecloud`). Nothing changes in `Code.gs`. In a tool:
+
+```js
+const ACCOUNT = import("https://gabkrouk.github.io/tools-usage/account.js")
+  .then(m => m.account("regine", { mount: document.querySelector("#account") })).catch(() => null);
+// before an analysis (keep the page state in location.hash: it is restored after signing in)
+const a = await ACCOUNT; if (a && !a.ensure()) return;
+```
+
 Raw data: the Google Sheet itself, or `ENDPOINT?action=export&format=tsv&key=ADMIN_KEY`.
 
 ## Tests
