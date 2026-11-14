@@ -143,6 +143,7 @@ a { color: var(--accent); }
       <button class="iconbtn" id="savekey">Valider</button>
       <span class="muted" id="keymsg"></span>
     </div>
+    <div id="accountsbody"></div>
     <div id="genesbody"></div>
   </section>
 </main>
@@ -159,7 +160,7 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": 
 const fmt = n => n >= 1e4 ? (n / 1e3).toFixed(n >= 1e5 ? 0 : 1).replace(".", ",") + " k" : n.toLocaleString("fr-FR");
 const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const SLOTS = ["--s1", "--s2", "--s3", "--s4", "--s5", "--s6", "--s7", "--s8"];
-const NICE = { regine: "Régine", genecloud: "GeneCloud" };
+const NICE = { regine: "Régine", genecloud: "GeneCloud", fiole: "Fiole" };
 const nice = t => NICE[t] || t.charAt(0).toUpperCase() + t.slice(1);
 const METRICS = { visits: "Vues", runs: "Analyses lancées", sessions: "Sessions" };
 
@@ -384,7 +385,18 @@ function renderBars() {
   hbars(sum(DATA.referrers).map(o => ({ ...o, key: o.key === "direct" ? "accès direct / favori" : o.key })), $("#ref"), color);
 }
 
+function renderAccounts() {
+  const A = DATA.accounts, el = $("#accountsbody");
+  if (!A || !A.length) { el.innerHTML = ""; return; }
+  const key = encodeURIComponent($("#key").value.trim());
+  el.innerHTML = `<div class="card" style="margin-top:12px"><h2>Comptes utilisateurs <span class="muted" style="font-weight:400">(outils avec connexion — emails réservés au propriétaire)</span></h2>
+    <table><tr><th>Outil</th><th class="n">Comptes</th><th class="n">Actifs 30 j</th><th class="n">Nouveaux 30 j</th><th class="n">Connexions</th><th>Emails</th></tr>
+    ${A.map(a => `<tr><td><span class="dot" style="background:${colorOf(a.tool)}"></span> ${esc(nice(a.tool))}</td><td class="n">${fmt(a.accounts)}</td><td class="n">${fmt(a.active30)}</td><td class="n">${fmt(a.new30)}</td><td class="n">${fmt(a.logins)}</td>
+      <td>${DEMO ? "—" : `<a href="${ENDPOINT}?action=accounts&format=tsv&tool=${encodeURIComponent(a.tool)}&key=${key}">Télécharger (TSV)</a>`}</td></tr>`).join("")}</table></div>`;
+}
+
 function renderGenes() {
+  renderAccounts();
   const G = DATA.genes, el = $("#genesbody");
   $("#keycard").style.display = DEMO ? "none" : "";
   if (!G) { el.innerHTML = DEMO ? "" : `<p class="muted">Entrez la clé admin pour voir les listes.</p>`; return; }
@@ -437,6 +449,7 @@ function demoData() {
   return {
     generated: new Date().toISOString(), admin: true,
     tools: tools.map(([tool, first]) => ({ tool, first, last: today })), daily, tz, referrers,
+    accounts: [{ tool: "fiole", accounts: 128, active30: 54, new30: 17, logins: 912 }],
     genes: {
       submitted: 412, distinct: 287, nGenes: 6931, examples: 96, perTool: { regine: 251, genecloud: 148, "nouvel-outil": 13 },
       sizes: [{ bin: "1-5", n: 31 }, { bin: "6-20", n: 74 }, { bin: "21-50", n: 69 }, { bin: "51-200", n: 72 }, { bin: "201-1000", n: 34 }, { bin: ">1000", n: 7 }],

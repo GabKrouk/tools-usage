@@ -6,10 +6,14 @@
  *
  *   events : one row per page view ("visit") or analysis ("run")
  *   lists  : one row per gene list submitted, when the user left "share my list" ticked
+ *   accounts : one row per (tool, email) for tools with user accounts (Fiole): first/last sign-in, number of sign-ins.
+ *              Written only by the tool's server with the admin key; never part of the public statistics.
  *
  * GET ?action=stats                -> public aggregates (daily views/runs/sessions per tool, time zones, referrers)
  * GET ?action=stats&key=ADMIN_KEY  -> + gene-list statistics (top genes, co-queried pairs, list sizes, recent lists)
  * GET ?action=export&key=ADMIN_KEY -> every stored list (JSON, or TSV with &format=tsv)
+ * GET ?action=accounts&key=ADMIN_KEY -> every account (JSON, or TSV with &format=tsv; &tool=fiole to filter)
+ * POST {tool, event:"login", email, key}  -> records a sign-in (server to server, admin key required)
  *
  * Setup: see README.md (Extensions > Apps Script, paste this file, run setup(), Deploy > Web app, access "Anyone").
  */
@@ -19,19 +23,24 @@ var SHEET_ID = "";                // set to the Sheet id when the script is stan
 var EVENTS = "events", LISTS = "lists";
 var EVENT_COLS = ["ts", "tool", "event", "version", "session", "tz", "lang", "referrer", "n_genes", "list_id"];
 var LIST_COLS = ["ts", "tool", "list_id", "n", "source", "name", "genes", "params"];
+var ACCOUNTS = "accounts", ACCOUNT_COLS = ["email", "tool", "first_seen", "last_seen", "logins"];
+var EMAIL_RE = /^[^@\s]{1,64}@[^@\s]{1,255}\.[^@\s]{2,}$/;
 var MAX_GENES = 20000;                       // larger lists are counted but not stored
 var TOOL_RE = /^[a-z0-9][a-z0-9_-]{0,31}$/;
 var GENE_RE = /^[A-Za-z0-9._:-]{2,40}$/;     // AGI (AT1G01010) and other species' identifiers
+
+function sheet(ss, name, cols) {
+  var sh = ss.getSheetByName(name) || ss.insertSheet(name);
+  if (sh.getLastRow() === 0) { sh.appendRow(cols); sh.setFrozenRows(1); }
+  return sh;
+}
 
 function book() { return SHEET_ID ? SpreadsheetApp.openById(SHEET_ID) : SpreadsheetApp.getActive(); }
 
 // ------------------------------------------------------------------------------------------ setup (run once)
 function setup() {
   var ss = book();
-  [[EVENTS, EVENT_COLS], [LISTS, LIST_COLS]].forEach(function (s) {
-    var sh = ss.getSheetByName(s[0]) || ss.insertSheet(s[0]);
-    if (sh.getLastRow() === 0) { sh.appendRow(s[1]); sh.setFrozenRows(1); }
-  });
+  [[EVENTS, EVENT_COLS], [LISTS, LIST_COLS], [ACCOUNTS, ACCOUNT_COLS]].forEach(function (s) { sheet(ss, s[0], s[1]); });
   var p = PropertiesService.getScriptProperties();
   if (!p.getProperty("ADMIN_KEY")) p.setProperty("ADMIN_KEY", Utilities.getUuid().replace(/-/g, "").slice(0, 20));
   Logger.log("ADMIN_KEY = " + p.getProperty("ADMIN_KEY") + "  (paste it in the dashboard to see the gene-list statistics)");
@@ -39,8 +48,10 @@ function setup() {
 
 // ------------------------------------------------------------------------------------------ write
 function doPost(e) {
-  var rows;
-  try { rows = cleanEvent(JSON.parse(e.postData.contents), new Date()); }
+  var rows, d;
+  try { d = JSON.parse(e.postData.contents); } catch (err) { return json({ ok: false, error: "bad payload" }); }
+  if (d && d.event === "login") return recordLogin(d);
+  try { rows = cleanEvent(d, new Date()); }
   catch (err) { return json({ ok: false, error: String(err.message || err) }); }
   var lock = LockService.getScriptLock();
   lock.waitLock(10000);
@@ -50,6 +61,46 @@ function doPost(e) {
     if (rows.list) ss.getSheetByName(LISTS).appendRow(rows.list);
   } finally { lock.releaseLock(); }
   return json({ ok: true });
+}
+
+// a sign-in reported by a tool's server (never by a browser: the admin key is required)
+function recordLogin(d) {
+  if (!d.key || d.key !== PropertiesService.getScriptProperties().getProperty("ADMIN_KEY")) return json({ ok: false, error: "key required" });
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var sh = sheet(book(), ACCOUNTS, ACCOUNT_COLS);
+    var res = upsertAccount(values(sh), d, new Date());
+    if (res.index < 0) sh.appendRow(res.row);
+    else sh.getRange(res.index + 2, 1, 1, res.row.length).setValues([res.row]);
+  } catch (err) { return json({ ok: false, error: String(err.message || err) }); }
+  finally { lock.releaseLock(); }
+  return json({ ok: true });
+}
+
+// pure: given the account rows (ACCOUNT_COLS), returns the row to write and its index (-1 = new row)
+function upsertAccount(rows, d, now) {
+  var tool = String(d.tool || "").toLowerCase();
+  if (!TOOL_RE.test(tool)) throw new Error("bad tool");
+  var email = String(d.email || "").trim().toLowerCase();
+  if (!EMAIL_RE.test(email) || email.length > 320) throw new Error("bad email");
+  var ts = now.toISOString();
+  for (var i = 0; i < rows.length; i++) {
+    if (rows[i][0] === email && rows[i][1] === tool) return { index: i, row: [email, tool, rows[i][2] || ts, ts, (Number(rows[i][4]) || 0) + 1] };
+  }
+  return { index: -1, row: [email, tool, ts, ts, 1] };
+}
+
+// admin-only summary of the accounts, per tool
+function accountStats(rows, now) {
+  var per = {}, d30 = new Date(now.getTime() - 30 * 864e5).toISOString();
+  rows.forEach(function (r) {
+    var t = per[r[1]] || (per[r[1]] = { tool: r[1], accounts: 0, active30: 0, new30: 0, logins: 0 });
+    t.accounts++; t.logins += Number(r[4]) || 0;
+    if (String(r[3]) >= d30) t.active30++;
+    if (String(r[2]) >= d30) t.new30++;
+  });
+  return Object.keys(per).sort().map(function (k) { return per[k]; });
 }
 
 // validates one payload from usage.js and returns the rows to append (pure: testable outside Apps Script)
@@ -82,6 +133,14 @@ function doGet(e) {
   var admin = !!q.key && q.key === PropertiesService.getScriptProperties().getProperty("ADMIN_KEY");
   var ss = book();
   var ev = values(ss.getSheetByName(EVENTS)), li = admin ? values(ss.getSheetByName(LISTS)) : [];
+  var acc = admin && ss.getSheetByName(ACCOUNTS) ? values(ss.getSheetByName(ACCOUNTS)) : [];
+  if (q.action === "accounts") {
+    if (!admin) return json({ ok: false, error: "key required" });
+    var rows = acc.filter(function (r) { return !q.tool || r[1] === q.tool; });
+    if (q.format === "tsv") return ContentService.createTextOutput([ACCOUNT_COLS.join("\t")].concat(rows.map(function (r) { return r.join("\t"); })).join("\n"))
+      .setMimeType(ContentService.MimeType.TEXT);
+    return json({ ok: true, columns: ACCOUNT_COLS, rows: rows });
+  }
   if (q.action === "export") {
     if (!admin) return json({ ok: false, error: "key required" });
     if (q.format === "tsv") return ContentService.createTextOutput([LIST_COLS.join("\t")].concat(li.map(function (r) { return r.join("\t"); })).join("\n"))
@@ -89,6 +148,7 @@ function doGet(e) {
     return json({ ok: true, columns: LIST_COLS, rows: li });
   }
   var out = aggregate(ev, li, { admin: admin });
+  if (admin) out.accounts = accountStats(acc, new Date());
   out.ok = true; out.admin = admin; out.generated = new Date().toISOString();
   return json(out, q.callback);
 }
@@ -179,4 +239,4 @@ function geneStats(lists, opt) {
   };
 }
 
-if (typeof module !== "undefined") module.exports = { cleanEvent: cleanEvent, aggregate: aggregate, geneStats: geneStats };
+if (typeof module !== "undefined") module.exports = { cleanEvent: cleanEvent, aggregate: aggregate, geneStats: geneStats, upsertAccount: upsertAccount, accountStats: accountStats };

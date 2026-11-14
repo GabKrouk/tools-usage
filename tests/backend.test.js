@@ -2,7 +2,7 @@
 const fs = require("fs"), vm = require("vm"), assert = require("assert");
 const ctx = { module: { exports: {} } };
 vm.runInNewContext(fs.readFileSync(__dirname + "/../apps-script/Code.gs", "utf8"), ctx);
-const { cleanEvent, aggregate } = ctx.module.exports;
+const { cleanEvent, aggregate, upsertAccount, accountStats } = ctx.module.exports;
 const now = d => new Date(d + "T12:00:00Z");
 const rows = { events: [], lists: [] };
 const post = (d, day) => { const r = cleanEvent(d, now(day)); rows.events.push(r.event); if (r.list) rows.lists.push(r.list); return r; };
@@ -31,4 +31,16 @@ const G = aggregate(rows.events, rows.lists, { admin: true }).genes;
 assert.equal(G.submitted, 4); assert.equal(G.examples, 1); assert.equal(G.distinct, 2);  // L1 run in 2 tools counts once
 assert.deepEqual(G.top[0], { gene: "AT1G08090", lists: 2, tools: ["regine", "genecloud"] });
 assert.deepEqual(G.pairs[0], { a: "AT1G08090", b: "AT1G12110", lists: 2, jaccard: 1 });
+
+// accounts (Fiole sign-ins): upsert per (tool, email), admin-only stats
+const acc = [];
+const login = (d, day) => { const r = upsertAccount(acc, d, now(day)); if (r.index < 0) acc.push(r.row); else acc[r.index] = r.row; return r; };
+assert.throws(() => upsertAccount(acc, { tool: "fiole", email: "not-an-email" }, new Date()));
+assert.throws(() => upsertAccount(acc, { tool: "Bad!", email: "a@b.org" }, new Date()));
+login({ tool: "fiole", email: " Ana@Lab.FR " }, "2026-10-01");
+login({ tool: "fiole", email: "ana@lab.fr" }, "2026-11-10");
+login({ tool: "fiole", email: "bob@lab.fr" }, "2026-11-12");
+assert.deepEqual(acc[0], ["ana@lab.fr", "fiole", "2026-10-01T12:00:00.000Z", "2026-11-10T12:00:00.000Z", 2]);
+assert.equal(acc.length, 2);
+assert.deepEqual(accountStats(acc, now("2026-11-14")), [{ tool: "fiole", accounts: 2, active30: 2, new30: 1, logins: 3 }]);
 console.log("backend: all tests passed");

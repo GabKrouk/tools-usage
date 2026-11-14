@@ -49,11 +49,17 @@ USAGE?.run({ genes, source: "paste", params: { /* the options worth counting */ 
 |---|---|---|
 | `events` | page view or analysis | time, tool, event, version, tab session id, time zone, language, referrer host, list size, list id |
 | `lists` | analysis whose user left *share my list* ticked | time, tool, list id, size, source, name, sorted gene identifiers, options |
+| `accounts` | user account of a tool with sign-in (Fiole), per tool | email, tool, first sign-in, last sign-in, number of sign-ins |
 
 No IP address, no cookie, no persistent identifier (the session id lives in `sessionStorage`, one browser tab).
 The list id is a SHA-256 prefix of the sorted genes: the same list run twice, or in two tools, has the same id.
 The *share my list* box is ticked by default (`SHARE_DEFAULT` in `usage.js`); the visitor's choice is remembered for all
 tools of the site. Nothing is sent from `localhost` or `file://` pages.
+
+Accounts: a tool with user accounts (Fiole) reports each sign-in **from its server** with
+`POST {"tool":"fiole","event":"login","email":"…","key":"ADMIN_KEY"}` (the key never reaches a browser). The emails are
+only visible with the admin key (dashboard section *Comptes utilisateurs*, or `ENDPOINT?action=accounts&format=tsv&key=ADMIN_KEY`);
+the public statistics never include them. The `accounts` sheet is created on the first sign-in.
 
 Raw data: the Google Sheet itself, or `ENDPOINT?action=export&format=tsv&key=ADMIN_KEY`.
 
